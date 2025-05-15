@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'historial.dart';
+import 'graficos.dart';
+import 'calendario.dart';
+import 'gastos.dart';
+import 'ingresos.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,6 +25,13 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'APP FINANCIERA'),
+      routes: {
+        '/historial': (context) => const HistorialScreen(),
+        '/graficos': (context) => const GraficosScreen(),
+        '/calendario': (context) => const CalendarioScreen(),
+        '/gastos': (context) => const GastosScreen(),
+        '/ingresos': (context) => const IngresosScreen(),
+      },
     );
   }
 }
@@ -36,6 +48,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   bool _showLogoutButton = false;
+  double _saldo = 0.00;
+
+  // Lista de pantallas
+  final List<Widget> _screens = [
+    const _HomeContent(), // Contenido principal de la pantalla de inicio
+    const HistorialScreen(),
+    const GraficosScreen(),
+    const CalendarioScreen(),
+  ];
 
   void _onTabTapped(int index) {
     setState(() {
@@ -50,8 +71,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _logout() {
-    // Lógica para cerrar sesión
     debugPrint('Usuario salió de la aplicación');
+  }
+
+  void _agregarIngreso() {
+    setState(() {
+      _saldo += 100.00;
+    });
+  }
+
+  void _agregarGasto() {
+    setState(() {
+      _saldo -= 50.00;
+    });
   }
 
   @override
@@ -69,113 +101,152 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // Barra de bienvenida con el botón de usuario
-          Container(
-            color: Colors.grey[100],
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  'Bienvenid@ Usuario',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (_showLogoutButton)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: ElevatedButton(
-                          onPressed: _logout,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[400],
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          ),
-                          child: const Text('Salir'),
-                        ),
-                      ),
-                    GestureDetector(
-                      onTap: _toggleLogoutButton,
-                      child: const Icon(
-                        Icons.account_circle,
-                        size: 30,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Espacio entre el mensaje y el saldo
-          const SizedBox(height: 25),
-          // Saldo centrado
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                '\$0.00',
-                style: TextStyle(
-                  fontSize: 55,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF40E0D0),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tu dinero',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-          // Espacio restante
-          const Expanded(child: SizedBox()),
-        ],
+      // Usamos IndexedStack para mantener el estado de cada pantalla
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
       bottomNavigationBar: Container(
         height: 70,
         color: const Color(0xFF40E0D0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
+          children: [
             IconButton(
-              icon: const Icon(Icons.home, size: 28, color: Colors.white),
+              icon: Icon(Icons.home,
+                  color: _currentIndex == 0 ? Colors.white : Colors.white70),
               onPressed: () => _onTabTapped(0),
               tooltip: 'Inicio',
             ),
             IconButton(
-              icon: const Icon(Icons.history, size: 28, color: Colors.white),
+              icon: Icon(Icons.history,
+                  color: _currentIndex == 1 ? Colors.white : Colors.white70),
               onPressed: () => _onTabTapped(1),
               tooltip: 'Historial',
             ),
             IconButton(
-              icon: const Icon(Icons.bar_chart, size: 28, color: Colors.white),
+              icon: Icon(Icons.bar_chart,
+                  color: _currentIndex == 2 ? Colors.white : Colors.white70),
               onPressed: () => _onTabTapped(2),
               tooltip: 'Gráficos',
             ),
             IconButton(
-              icon: const Icon(Icons.calendar_today, size: 28, color: Colors.white),
+              icon: Icon(Icons.calendar_today,
+                  color: _currentIndex == 3 ? Colors.white : Colors.white70),
               onPressed: () => _onTabTapped(3),
               tooltip: 'Calendario',
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings, size: 28, color: Colors.white),
-              onPressed: () => _onTabTapped(4),
-              tooltip: 'Ajustes',
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// Widget para el contenido de la pantalla de inicio
+class _HomeContent extends StatelessWidget {
+  const _HomeContent();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_MyHomePageState>()!;
+
+    return Column(
+      children: [
+        // Barra de bienvenida
+        Container(
+          color: Colors.grey[100],
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Bienvenid@ Usuario',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Row(
+                children: [
+                  if (state._showLogoutButton)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: ElevatedButton(
+                        onPressed: state._logout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[400],
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Salir'),
+                      ),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.account_circle),
+                    color: Colors.black87,
+                    onPressed: state._toggleLogoutButton,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Saldo
+        Column(
+          children: [
+            Text(
+              '\$${state._saldo.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF40E0D0),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tu dinero',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 30),
+            // Botones
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: state._agregarIngreso,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7FFFD4),
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Ingresos'),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: state._agregarGasto,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF008B8B),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Gastos'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const Expanded(child: SizedBox()),
+      ],
     );
   }
 }
