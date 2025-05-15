@@ -74,16 +74,12 @@ class _MyHomePageState extends State<MyHomePage> {
     debugPrint('Usuario salió de la aplicación');
   }
 
-  void _agregarIngreso() {
-    setState(() {
-      _saldo += 100.00;
-    });
+  void _navigateToIngresos() {
+    Navigator.pushNamed(context, '/ingresos');
   }
 
-  void _agregarGasto() {
-    setState(() {
-      _saldo -= 50.00;
-    });
+  void _navigateToGastos() {
+    Navigator.pushNamed(context, '/gastos');
   }
 
   @override
@@ -217,7 +213,7 @@ class _HomeContent extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: state._agregarIngreso,
+                  onPressed: state._navigateToIngresos,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7FFFD4),
                     foregroundColor: Colors.black87,
@@ -230,7 +226,7 @@ class _HomeContent extends StatelessWidget {
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton(
-                  onPressed: state._agregarGasto,
+                  onPressed: state._navigateToGastos,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF008B8B),
                     foregroundColor: Colors.white,
