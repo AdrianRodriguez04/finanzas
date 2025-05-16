@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'fl_chart/fl_chart.dart';
 import 'login.dart';
 import 'historial.dart';
@@ -63,14 +62,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   double _saldo = 0.00;
-
-  // Lista de pantallas
-  final List<Widget> _screens = [
-    _HomeContent(), // Ahora recibe el username
-    const HistorialScreen(),
-    const GraficosScreen(),
-    const CalendarioScreen(),
-  ];
+  double _ingresosTotales = 0.00;
+  double _gastosTotales = 0.00;
 
   void _onTabTapped(int index) {
     setState(() {
@@ -78,12 +71,38 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _navigateToIngresos() {
-    Navigator.pushNamed(context, '/ingresos');
+  void _navigateToIngresos() async {
+    final result = await Navigator.pushNamed(context, '/ingresos');
+    if (result != null && result is double) {
+      _actualizarSaldo(result);
+    }
   }
 
-  void _navigateToGastos() {
-    Navigator.pushNamed(context, '/gastos');
+  void _navigateToGastos() async {
+    final result = await Navigator.pushNamed(context, '/gastos');
+    if (result != null && result is double) {
+      _actualizarSaldo(-result);
+    }
+  }
+
+  void _actualizarSaldo(double cantidad) {
+    setState(() {
+      _saldo += cantidad;
+      if (cantidad > 0) {
+        _ingresosTotales += cantidad;
+      } else {
+        _gastosTotales += cantidad.abs();
+      }
+    });
+  }
+
+  List<Widget> _buildScreens() {
+    return [
+      _HomeContent(), // reconstruido con datos nuevos
+      const HistorialScreen(),
+      const GraficosScreen(),
+      const CalendarioScreen(),
+    ];
   }
 
   @override
@@ -103,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: _buildScreens(),
       ),
       bottomNavigationBar: Container(
         height: 70,
@@ -142,34 +161,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class _HomeContent extends StatefulWidget {
+class _HomeContent extends StatelessWidget {
   _HomeContent({Key? key}) : super(key: key);
 
   @override
-  _HomeContentState createState() => _HomeContentState();
-}
-
-class _HomeContentState extends State<_HomeContent> {
-  bool _showLogoutButton = false;
-  double _saldo = 0.00;
-
-  void _toggleLogoutButton() {
-    setState(() {
-      _showLogoutButton = !_showLogoutButton;
-    });
-  }
-
-  void _logout() {
-    // Cierra la aplicación completamente
-    Future.delayed(Duration.zero, () {
-      SystemNavigator.pop();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final parentState = context.findAncestorStateOfType<_MyHomePageState>();
-    final username = (parentState?.widget as MyHomePage).username;
+    final state = context.findAncestorStateOfType<_MyHomePageState>();
+    final username = state?.widget.username ?? 'Usuario';
+    final saldo = state?._saldo ?? 0.00;
+    final ingresos = state?._ingresosTotales ?? 0.00;
+    final gastos = state?._gastosTotales ?? 0.00;
+    final diferencia = ingresos - gastos;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -178,7 +180,7 @@ class _HomeContentState extends State<_HomeContent> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Barra de bienvenida con nombre de usuario
+              // Barra de bienvenida
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -186,28 +188,15 @@ class _HomeContentState extends State<_HomeContent> {
                     'Bienvenid@ $username',
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   Row(
                     children: [
-                      if (_showLogoutButton)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: ElevatedButton(
-                            onPressed: _logout,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red[400],
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Salir'),
-                          ),
-                        ),
                       IconButton(
                         icon: const Icon(Icons.account_circle),
                         color: Colors.black87,
-                        onPressed: _toggleLogoutButton,
+                        onPressed: () {},
                       ),
                     ],
                   ),
@@ -220,11 +209,11 @@ class _HomeContentState extends State<_HomeContent> {
               Column(
                 children: [
                   Text(
-                    '\$${_saldo.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    '\$${saldo.toStringAsFixed(2)}',
+                    style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF40E0D0),
+                      color: saldo >= 0 ? const Color(0xFF40E0D0) : Colors.red,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -245,7 +234,7 @@ class _HomeContentState extends State<_HomeContent> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
-                    onPressed: parentState?._navigateToIngresos,
+                    onPressed: state?._navigateToIngresos,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF7FFFD4),
                       foregroundColor: Colors.black87,
@@ -258,7 +247,7 @@ class _HomeContentState extends State<_HomeContent> {
                   ),
                   const SizedBox(width: 20),
                   ElevatedButton(
-                    onPressed: parentState?._navigateToGastos,
+                    onPressed: state?._navigateToGastos,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF008B8B),
                       foregroundColor: Colors.white,
@@ -280,7 +269,7 @@ class _HomeContentState extends State<_HomeContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '26 abr 2025 - 25 may 2025',
+                      'Resumen financiero',
                       style: TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
@@ -290,9 +279,9 @@ class _HomeContentState extends State<_HomeContent> {
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('Ingresos', style: TextStyle(color: Colors.black87, fontSize: 18)),
-                        Text('\$ 0.00', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                      children: [
+                        const Text('Ingresos', style: TextStyle(color: Colors.black87, fontSize: 18)),
+                        Text('\$${ingresos.toStringAsFixed(2)}', style: const TextStyle(color: Colors.black54, fontSize: 16)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -306,9 +295,9 @@ class _HomeContentState extends State<_HomeContent> {
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('Gastos', style: TextStyle(color: Colors.black87, fontSize: 18)),
-                        Text('\$ 0.00', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                      children: [
+                        const Text('Gastos', style: TextStyle(color: Colors.black87, fontSize: 18)),
+                        Text('\$${gastos.toStringAsFixed(2)}', style: const TextStyle(color: Colors.black54, fontSize: 16)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -321,41 +310,50 @@ class _HomeContentState extends State<_HomeContent> {
                     ),
                     const SizedBox(height: 16),
                     Row(
-                      children: const [
-                        Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
-                        SizedBox(width: 8),
+                      children: [
+                        Icon(
+                          diferencia >= 0 ? Icons.check_circle : Icons.warning_amber_rounded,
+                          color: diferencia >= 0 ? Colors.green : Colors.red,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          'Restante:  \$ 0.00',
-                          style: TextStyle(color: Colors.black38, fontWeight: FontWeight.bold),
+                          'Restante: \$${diferencia.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: diferencia >= 0 ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Has gastado \$ 0.00 más respecto a tus ingresos',
-                      style: TextStyle(color: Colors.black38),
+                    Text(
+                      diferencia >= 0
+                          ? 'Tienes un saldo positivo de \$${diferencia.toStringAsFixed(2)}'
+                          : 'Has gastado \$${diferencia.abs().toStringAsFixed(2)} más que tus ingresos',
+                      style: TextStyle(
+                        color: diferencia >= 0 ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Text(
+                        'Ingresos y gastos mensuales',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: BarChartIngresosGastos(),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 30),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
-                child: Text(
-                  'Ingresos y gastos mensuales',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black,
-
-                  ),
-                ),
-              ),
-              const SizedBox(height: 25),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
-                child: BarChartIngresosGastos(),
               ),
             ],
           ),
