@@ -1,3 +1,17 @@
+// android/build.gradle
+buildscript {
+    ext.kotlin_version = '1.8.20' // Ajusta según tu proyecto
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.2' // O la versión AGP que uses
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.4.2' // O la versión recomendada
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -5,14 +19,8 @@ allprojects {
     }
 }
 
-rootProject.buildDir = "../build"
+rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
-}
+// ... (resto del archivo como te mostré antes) ...

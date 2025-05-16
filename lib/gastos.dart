@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Asegúrate de que este paquete esté en tu pubspec.yaml
+import 'firebase_options.dart'; //
+import 'package:intl/intl.dart'; // Flecha retroceso
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GastosScreen extends StatefulWidget {
   const GastosScreen({super.key});
@@ -31,6 +33,15 @@ class _GastosScreenState extends State<GastosScreen> {
     super.initState();
     _selectedDate = DateTime.now();
     // _montoController.text = '50';
+  }
+
+  Future<void> addGasto(String monto, String nombre, String vendedor, String fecha) async {
+    await FirebaseFirestore.instance.collection('gastos').add({
+      'monto': monto,
+      'nombre': nombre,
+      'vendedor': vendedor,
+      'fecha': fecha,
+    });
   }
 
   // Función para mostrar el selector de fecha
@@ -159,6 +170,7 @@ class _GastosScreenState extends State<GastosScreen> {
                       const SnackBar(content: Text('Gasto registrado')),
                     );
                     // Lógica para guardar el gasto:
+                    addGasto(_montoController.text, _nombreController.text, _vendedorController.text, _selectedDate.toString());
                     print('Monto: ${_montoController.text}');
                     print('Nombre: ${_nombreController.text}');
                     print('Vendedor: ${_vendedorController.text}');
