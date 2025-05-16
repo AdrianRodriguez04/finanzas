@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'fl_chart/fl_chart.dart';
+import 'login.dart';
 import 'historial.dart';
 import 'graficos.dart';
 import 'calendario.dart';
@@ -24,8 +27,15 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'APP FINANCIERA'),
+      home: const LoginScreen(),
       routes: {
+        '/home': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          return MyHomePage(
+            title: 'APP FINANCIERA',
+            username: args?['username'] ?? 'Usuario',
+          );
+        },
         '/historial': (context) => const HistorialScreen(),
         '/graficos': (context) => const GraficosScreen(),
         '/calendario': (context) => const CalendarioScreen(),
@@ -37,9 +47,14 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
   final String title;
+  final String username;
+
+  const MyHomePage({
+    super.key,
+    required this.title,
+    required this.username,
+  });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -47,12 +62,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
-  bool _showLogoutButton = false;
   double _saldo = 0.00;
 
   // Lista de pantallas
   final List<Widget> _screens = [
-    const _HomeContent(), // Contenido principal de la pantalla de inicio
+    _HomeContent(), // Ahora recibe el username
     const HistorialScreen(),
     const GraficosScreen(),
     const CalendarioScreen(),
@@ -62,16 +76,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _currentIndex = index;
     });
-  }
-
-  void _toggleLogoutButton() {
-    setState(() {
-      _showLogoutButton = !_showLogoutButton;
-    });
-  }
-
-  void _logout() {
-    debugPrint('Usuario salió de la aplicación');
   }
 
   void _navigateToIngresos() {
@@ -97,7 +101,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       ),
-      // Usamos IndexedStack para mantener el estado de cada pantalla
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -139,110 +142,225 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// Widget para el contenido de la pantalla de inicio
-class _HomeContent extends StatelessWidget {
-  const _HomeContent();
+class _HomeContent extends StatefulWidget {
+  _HomeContent({Key? key}) : super(key: key);
+
+  @override
+  _HomeContentState createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  bool _showLogoutButton = false;
+  double _saldo = 0.00;
+
+  void _toggleLogoutButton() {
+    setState(() {
+      _showLogoutButton = !_showLogoutButton;
+    });
+  }
+
+  void _logout() {
+    // Cierra la aplicación completamente
+    Future.delayed(Duration.zero, () {
+      SystemNavigator.pop();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final state = context.findAncestorStateOfType<_MyHomePageState>()!;
+    final parentState = context.findAncestorStateOfType<_MyHomePageState>();
+    final username = (parentState?.widget as MyHomePage).username;
 
-    return Column(
-      children: [
-        // Barra de bienvenida
-        Container(
-          color: Colors.grey[100],
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Bienvenid@ Usuario',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              // Barra de bienvenida con nombre de usuario
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (state._showLogoutButton)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: ElevatedButton(
-                        onPressed: state._logout,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[400],
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Salir'),
-                      ),
+                  Text(
+                    'Bienvenid@ $username',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.account_circle),
-                    color: Colors.black87,
-                    onPressed: state._toggleLogoutButton,
+                  ),
+                  Row(
+                    children: [
+                      if (_showLogoutButton)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: ElevatedButton(
+                            onPressed: _logout,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[400],
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Salir'),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.account_circle),
+                        color: Colors.black87,
+                        onPressed: _toggleLogoutButton,
+                      ),
+                    ],
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Saldo
+              Column(
+                children: [
+                  Text(
+                    '\$${_saldo.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF40E0D0),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Tu dinero',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              // Botones
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: parentState?._navigateToIngresos,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7FFFD4),
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Ingresos'),
+                  ),
+                  const SizedBox(width: 20),
+                  ElevatedButton(
+                    onPressed: parentState?._navigateToGastos,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF008B8B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Gastos'),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+              // Barra de estado financiera
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '26 abr 2025 - 25 may 2025',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('Ingresos', style: TextStyle(color: Colors.black87, fontSize: 18)),
+                        Text('\$ 0.00', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.blue[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('Gastos', style: TextStyle(color: Colors.black87, fontSize: 18)),
+                        Text('\$ 0.00', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.red[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: const [
+                        Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Restante:  \$ 0.00',
+                          style: TextStyle(color: Colors.black38, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Has gastado \$ 0.00 más respecto a tus ingresos',
+                      style: TextStyle(color: Colors.black38),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 30),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: Text(
+                  'Ingresos y gastos mensuales',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black,
+
+                  ),
+                ),
+              ),
+              const SizedBox(height: 25),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: BarChartIngresosGastos(),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        // Saldo
-        Column(
-          children: [
-            Text(
-              '\$${state._saldo.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF40E0D0),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Tu dinero',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 30),
-            // Botones
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: state._navigateToIngresos,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7FFFD4),
-                    foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text('Ingresos'),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: state._navigateToGastos,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF008B8B),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text('Gastos'),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const Expanded(child: SizedBox()),
-      ],
+      ),
     );
   }
 }
